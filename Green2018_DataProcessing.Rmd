@@ -1,0 +1,1115 @@
+---
+title: "Green - Data Processing"
+author: "Natalia Gonzalez Alarcón"
+date: "4/19/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(forcats)
+library(dplyr)
+library(ggplot2)
+require(tidyverse)
+require(readr)
+require(lubridate)
+require(tidyverse)
+require(glimpse)
+require(readr)
+require(caret)
+install.packages("recipes")
+require(recipes)
+require(rattle) # For nice tree plots
+require(pdp)
+install.packages("skimr")
+require(skimr)
+install.packages("fastDummies")
+require(fastDummies)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+
+```{r}
+setwd("~/Box Sync/Data Science Project - Trip Record Data")
+
+```
+
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-01.csv")
+summary(green_data)
+```
+
+# clean data
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+
+```{r}
+# create function to calculate mode for payment type factor variables
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==1)
+
+green_monthly
+
+str(green_monthly)
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly, path="Green/Green_Data_Clean/green_2018-01.csv")
+```
+
+
+## February 2018
+
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-02.csv")
+summary(green_data)
+```
+
+# clean data
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==2)
+
+green_monthly
+str(green_monthly)
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly, path="Green/Green_Data_Clean/green_2018-02.csv")
+```
+
+## March 2018
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-03.csv")
+summary(green_data)
+```
+
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==3)
+
+green_monthly
+str(green_monthly)
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly, path="Green/Green_Data_Clean/green_2018-03.csv")
+```
+
+
+## April 2018
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-04.csv")
+summary(green_data)
+```
+
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==4)
+
+green_monthly
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly, path="Green/Green_Data_Clean/green_2018-04.csv")
+```
+
+
+## May 2018
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-05.csv")
+summary(green_data)
+```
+
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==5)
+
+head(green_monthly)
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly, path="Green/Green_Data_Clean/green_2018-05.csv")
+```
+
+
+## June 2018
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-06.csv")
+summary(green_data)
+```
+
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==6)
+
+green_monthly
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly, path="Green/Green_Data_Clean/green_2018-06.csv")
+```
+
+
+## July 2018
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-07.csv")
+summary(green_data)
+```
+
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==7)
+
+head(green_monthly)
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly, path="Green/Green_Data_Clean/green_2018-07.csv")
+```
+
+
+## August 2018
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-08.csv")
+summary(green_data)
+```
+
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==8)
+
+head(green_monthly)
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly,path="Green/Green_Data_Clean/green_2018-08.csv")
+```
+
+
+## September 2018
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-09.csv")
+summary(green_data)
+```
+
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==9)
+
+head(green_monthly)
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly, path="Green/Green_Data_Clean/green_2018-09.csv")
+```
+
+
+## October 2018
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-10.csv")
+summary(green_data)
+```
+
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==10)
+
+head(green_monthly)
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly, path="Green/Green_Data_Clean/green_2018-10.csv")
+```
+
+
+## November 2018
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-11.csv")
+summary(green_data)
+```
+
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==11)
+
+head(green_monthly)
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly, path="Green/Green_Data_Clean/green_2018-11.csv")
+```
+
+
+## December 2018
+```{r}
+green_data <- read_csv("Green/green_tripdata_2018-12.csv")
+summary(green_data)
+```
+
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime,
+          dropoff_date=lpep_dropoff_datetime,
+          passenger_count=passenger_count,
+          trip_distance=trip_distance,
+          payment_type = payment_type,
+          total_fare = total_amount,
+          pickup_location= PULocationID,
+          dropoff_location= DOLocationID)%>%
+  add_column(vehicle_type= "green")%>%
+  add_column(id = rownames(green_data))
+
+green
+```
+
+```{r}
+green <- green %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL),
+         payment_factor=as.factor(payment_type))
+green
+```
+
+```{r}
+## Dummy out the payment type categories
+dummy_payment <-
+  recipe(pickup_date~.,green) %>%
+  step_dummy(payment_factor, one_hot=TRUE ) %>% #categorial to dummy
+  prep()
+
+green_data2 <- bake(dummy_payment,green)
+str(green_data2)
+```
+
+```{r}
+green_clean <- green_data2 %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_factor_X1, 
+         payment_cash = payment_factor_X2,
+         payment_no_charge = payment_factor_X3,
+         payment_dispute = payment_factor_X4,
+         payment_unknown = payment_factor_X5)
+
+summary(green_clean)
+```
+
+```{r}
+green_monthly <- green_clean%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(passenger_count= mean(passenger_count),
+         trip_distance = mean(trip_distance),
+         total_fare = mean(total_fare),
+         trip = mode(trip),
+         payment_credit = sum(payment_credit), 
+         payment_cash = sum(payment_cash),
+         payment_no_charge = sum(payment_no_charge),
+         payment_dispute = sum(payment_dispute),
+         payment_unknown = sum(payment_unknown),
+         trip_n= n()) %>%
+   na.omit()%>%
+  filter(year==2018 & month==12)
+
+head(green_monthly)
+```
+Save aggregated data to a csv
+```{r}
+write_csv(green_monthly,path="Green/Green_Data_Clean/green_2018-12.csv")
+```
+
+
+fulldat
