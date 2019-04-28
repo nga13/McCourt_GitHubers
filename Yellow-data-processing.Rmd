@@ -1,0 +1,142 @@
+---
+title: "Data Science Project: New York City Taxi Market"
+author: "Group No. 2: McCourt GitHubers "
+        "Yihan Wang", "Natalia Gonzalez-Alarcon", "Jamie Taylor"
+date: "March 30, 2019"
+output: html_document
+---
+
+#Set working directory
+setwd(Users/jntay/Box Sync/Data Science Project - Trip Record Data)
+
+USE A GIT IGNORE FILE BEFORE COMMITTING TO GIT
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(tidyverse)
+require(glimpse)
+require(readr)
+require(lubridate)
+require(recipes)
+```
+
+## Part 1 -------------------------------------------------------
+
+## Reading in data and processing --------------------------------
+Reading in and processing Trip Record Data from New York City's Taxi and Limousine Commission. Data is saved by year, month, and vehicle type. We will download data from 2014-18 for each vehicle type and then transform/wrangle the data for analysis.
+
+read in data,
+mutate to reduce the size
+delete the original file
+any other calcs
+save new file
+
+
+Reading in one file at a time to mutate
+```{r}
+# Read in one file ----------------
+
+yellow_data <- read_csv("yellow/yellow_tripdata_2018-02.csv")
+
+```
+
+```{r}
+# Clean data
+
+yellow <- yellow_data %>%  
+  select(pickup_date = tpep_pickup_datetime,  # selecting variables we are interested in and renaming
+         dropoff_date = tpep_dropoff_datetime,
+         passenger_count,
+         trip_distance,
+         payment_type,
+         total_fare = total_amount,
+         pickup_location = PULocationID,
+         dropoff_location = DOLocationID
+    ) %>%
+  
+  add_column(vehicle_type= "yellow") # add vehicle type variable
+```
+
+```{r}
+# mutate variables
+
+yellow_mutate <- yellow %>%
+  mutate(pickup_date = round_date(pickup_date, unit = "day"),  #round date-times to day only, drop time
+         dropoff_date = round_date(dropoff_date, unit = "day"),
+         month = month(pickup_date), # create month variable
+         year = year(pickup_date), # create year variable
+         payment_type = as.factor(payment_type), # coerce to factor variable
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL)) %>% # convert PU and DO location to strings and concatenate
+  select(-pickup_location, -dropoff_location) # drop pickup and dropoff location variables
+str(yellow_mutate)
+
+```
+
+```{r}
+# Dummy out the payment type categories using the recipes package
+dummy_payment <- recipe(pickup_date~.,yellow_mutate) %>%
+  step_dummy(payment_type, one_hot = TRUE) %>%  
+prep()
+
+yellow_clean <- bake(dummy_payment, yellow_mutate) %>%
+  select(pickup_date,
+         dropoff_date,
+         month,
+         year,
+         passenger_count,
+         trip_distance,
+         total_fare,
+         vehicle_type,
+         trip,
+         payment_credit = payment_type_X1,
+         payment_cash = payment_type_X2,
+         payment_no_charge = payment_type_X3,
+         payment_dispute = payment_type_X4
+         )
+str(yellow_clean)
+```
+
+Some variables did not read in as date-time variables
+**Code for dates not already in date-time format**
+```{r}
+# yellow <- yellow %>%
+#  mutate(pickup_date = mdy_hm(`pickup_date`),    # convert strings to date-times
+#         pickup_date = as_date(pickup_date),   # mutate date-times to date only
+#         dropoff_date = mdy_hm(`dropoff_date`),
+#         dropoff_date = as_date(dropoff_date))
+```
+
+Create function to calculate mode for payment type factor variables 
+```{r}
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+```
+
+Aggregate data up to the month level and summarise
+```{r}
+ yellow_monthly <- yellow_clean %>%
+ mutate(pickup_date = round_date(pickup_date, unit = "month"),
+       dropoff_date = round_date(dropoff_date, unit = "month")) %>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(mean_passenger_count= mean(passenger_count), 
+            payment_credit = sum(payment_credit),
+            payment_cash = sum(payment_cash),
+            payment_no_charge = sum(payment_no_charge),
+            payment_dispute = sum(payment_dispute),
+            mean_trip_distance = mean(trip_distance),
+            mean_total_fare = mean(total_fare),
+            trip = mode(trip),
+            trip_n = n()) %>% 
+  na.omit() %>%
+  filter(year==2018 & month==1)
+
+```
+
+Save new monthly data to csv file
+```{r}
+write_csv(yellow_monthly, "clean-yellow-jan-2018.csv")
+```
+
+Repeat steps above for each file
