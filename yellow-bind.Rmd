@@ -1,0 +1,37 @@
+---
+title: "yellow-bind"
+author: "Group No. 2"
+date: "4/23/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require(readr)
+require(tidyverse)
+require(plyr)
+```
+
+## Bind Yellow Cab Data
+Binding aggregated yellow cab data from 2014-2018
+
+
+```{r}
+
+yellow_files <- list.files(path = "Yellow Clean", pattern = "*.csv", # save the file names to an object
+               full.names = TRUE)
+yellow_files
+```
+
+```{r}
+yellow_clean_full = ldply(yellow_files, read_csv)
+yellow_clean_full
+```
+
+```{r}
+# Save data to a CSV file
+
+write_csv(yellow_clean_full, "~/Box Sync/Data Science Project - Trip Record Data/Yellow Clean/yellow_clean_full.csv")
+```
+
