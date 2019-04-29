@@ -1,0 +1,606 @@
+---
+title: "FHV 2018"
+author: "Natalia Gonzalez Alarcón"
+date: "4/23/2019"
+output: html_document
+---
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+library(forcats)
+library(dplyr)
+library(ggplot2)
+require(tidyverse)
+require(readr)
+require(lubridate)
+require(tidyverse)
+require(glimpse)
+require(readr)
+require(caret)
+require(recipes)
+require(rattle)
+require(pdp)
+require(skimr)
+```
+
+```{r}
+setwd("~/Box Sync/Data Science Project - Trip Record Data")
+```
+
+## January 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-01.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-01.csv")
+```
+
+
+## February 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-02.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-02.csv")
+```
+
+
+
+## March 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-03.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-03.csv")
+```
+
+
+
+## April 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-04.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-04.csv")
+```
+
+
+## May 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-05.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-05.csv")
+```
+
+
+
+## June 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-06.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-06.csv")
+```
+
+
+
+## July 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-07.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-07.csv")
+```
+
+
+## August 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-08.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+  filter(month==8)%>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-08.csv")
+```
+
+
+
+## September 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-09.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-09.csv")
+```
+
+
+
+## October 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-10.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()%>%
+  filter(month==10)
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-10.csv")
+```
+
+
+## November 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-11.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-11.csv")
+```
+
+
+
+## December 2018
+```{r}
+fhv_data <- read_csv("FHV/fhv_tripdata_2018-12.csv")
+summary(fhv_data)
+```
+
+```{r}
+fhv <- fhv_data %>%
+  replace_na(list(SR_Flag = 0))%>%
+  select(pickup_date=Pickup_DateTime, #selecting and renaming the variables we want to use
+         dropoff_date =DropOff_datetime,
+         pickup_location=PUlocationID,
+         dropoff_location=DOlocationID,
+         shared_trip=SR_Flag)%>%
+  add_column(vehicle_type= "fhv")
+
+fhv
+```
+
+
+```{r}
+fhv <- fhv %>%
+  mutate(pickup_date = as.Date(pickup_date, format ="%Y-%m-%d"),
+         dropoff_date = as.Date(dropoff_date, format ="%Y-%m-%d"),
+         month=month(pickup_date),
+         year=year(pickup_date),
+         trip = paste(pickup_location, dropoff_location, sep = "-", collapse = NULL))
+
+fhv
+```
+
+```{r}
+fhv_monthly <- fhv%>%
+  group_by(month, year, vehicle_type) %>%
+  summarise(trip = mode(trip),
+            shared_trip=sum(shared_trip),
+            trip_n= n()) %>%
+   na.omit()
+
+fhv_monthly
+```
+
+```{r}
+write_csv(fhv_monthly, path="FHV/FHV_Data_Clean/fhv_2018-12.csv")
+```

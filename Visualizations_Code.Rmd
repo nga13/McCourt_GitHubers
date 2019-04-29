@@ -1,0 +1,377 @@
+---
+title: "Data Visualizations"
+author: "Natalia Gonzalez Alarcón"
+date: "4/25/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+library(forcats)
+library(dplyr)
+library(ggplot2)
+require(tidyverse)
+require(readr)
+require(lubridate)
+require(tidyverse)
+require(glimpse)
+library(extrafont)
+```
+
+```{r}
+## Read in the full data set
+setwd("~/Box Sync/Data Science Project - Trip Record Data")
+
+full_data <- read_csv("Total_fulldata.csv")
+full_data
+
+summary(full_data)
+```
+
+
+```{r echo=FALSE, fig.width=8, fig.height=5}
+## Data Visualization 1
+v1<-ggplot(data=full_data,
+       mapping= aes(x=year, y=trip_n/1000000, fill=vehicle_type))+
+  geom_bar(stat="identity",
+           position="stack", width=0.6)+
+  scale_fill_manual(name="Vehicle Type",
+                    labels=c("fhv"="For Hire", "green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("fhv"="#b3005a", "green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Evolution of the Taxi and FHV market size"),
+       subtitle = paste("The market size increased from approximately 180 million trips per month in 2014 to about 340 million in 2018"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="Number of trips per million people")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(size=11,colour="grey40"),
+        plot.title=element_text(size=16,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+v1
+
+```
+```{r}
+ggsave("images/figure2_vis.png", plot = v1)
+```
+## Total number of trips done in individual transport modes (all) is increasing yeary suggesting two possible conclusions that need to be frtherr research: 
+1. induce demanda, travel more
+2. these modes are taking away trips from mass public transport, potentially shifting away trips from more space-efficient modes (the fundamental advantage of publit ransport), 
+or a combination of both. 
+
+another topic for further research, which current data did not allow analyzing, is if the total vehicle miles travelled (VMT) by individual transport modes is increasing, suggesting that the usage of roads is increasing, which is a proxy for suggesting congestion is on the rise. 
+
+there is evidence that shows a decline in public transport rideship
+
+
+```{r}
+full_data<- full_data%>%
+  mutate(date = make_date(year, month),
+ date = as.Date(date, format ="%Y-%M"))
+  
+#View(full_data)
+```
+
+```{r}
+## Data Visualization 2
+v2<-ggplot(data=full_data,
+       mapping= aes(x=date, y=trip_n/1000000, fill=vehicle_type))+
+  geom_bar(stat="identity",
+           position="stack")+
+  scale_fill_manual(name="Vehicle Type",
+                    labels=c("fhv"="For Hire", "green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("fhv"="#b3005a", "green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("NYC taxi market: Evolution by month since the For Hire \nVehicles (FHV) started operations (2014-2018)"),
+       subtitle = paste("The volume of trips by vehicle type has dramatically changed since 2015, when FHV became popular"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="Number of trips per million people")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+v2  
+```
+```{r}
+ggsave("images/second_vis.png", plot = v2)
+```
+
+```{r echo=FALSE, fig.width=8, fig.height=5}
+# Data Visualization 3
+v3 <-ggplot(full_data, 
+           aes(x=date, y=trip_n/1000000,
+               group=vehicle_type, 
+               color=vehicle_type)) + 
+  geom_line(size=0.7) + 
+  geom_point(size=1.5)+
+  scale_color_manual(name="Vehicle Type",
+                    labels=c("fhv"="For Hire", "green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("fhv"="#b3005a", "green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Evolution of the standard taxi cab market in NYC, since 2014 when \nthe FHVs entered the market"),
+       subtitle = paste("Graph shows a decreasing trend of the traditional taxi trips and an increasing \ntrend of the number of trips taken by FHVs"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="Number of trips per million people")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+v3
+```
+```{r}
+ggsave("images/figure1_vis.png", plot = v3)
+```
+
+```{r echo=FALSE, fig.width=8, fig.height=5}
+v4<-full_data %>%
+  filter(vehicle_type!="fhv")%>%
+ggplot(mapping= aes(x=total_fare, y=log(trip_distance)))+
+  geom_point(mapping=aes(fill=vehicle_type), size=3, shape=21, color="black")+
+  scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Relationship between average trip distance and average fare"),
+       subtitle = paste("The average NYC user seems to take yellow cabs for longer trips"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Average Total Fare (US dollars)",
+       y="Average Trip Distance (log miles)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+  v4
+```
+
+```{r}
+ggsave("images/figure3_vis.png", plot = v4)
+```
+
+```{r}
+## Data Visualization 5
+v_cash <-full_data %>%
+  filter(vehicle_type!="fhv")%>%
+  ggplot(mapping=aes(x=date, 
+                     y=payment_cash/1000, 
+                     group=vehicle_type,
+                     fill=vehicle_type))+
+    geom_bar(stat="identity")+
+  # facet_wrap(~vehicle_type, ncol=1,scales = "free")+
+  # ylim(0,8000)+
+    scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Trips paid by cash in the NYC traditional taxi market (2014 -2018)"),
+       subtitle = paste("Substantial deacrease since people are more likely to use electronic payment methods"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="Trips paid by cash (thousands)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+v_cash
+```
+
+```{r}
+ggsave("images/cash_vis.png", plot = v_cash)
+```
+
+```{r echo=FALSE, fig.width=8, fig.height=5}
+v_credit<-full_data %>%
+  filter(vehicle_type!="fhv")%>%
+ggplot(mapping=aes(x=date, y=payment_credit/1000, fill=vehicle_type))+
+    geom_bar(stat="identity")+
+  #  facet_wrap(~vehicle_type, ncol=1,scales = "free")+
+  # ylim(0,8000)+
+    scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Trips paid by credit card in the NYC traditional taxi market (2014 -2018)"),
+       subtitle = paste("Smooth decrease over time might be due to the decline of the total number of trips in the market"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="Trips paid by credit (thousands)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(face="italic",size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+v_credit
+```
+```{r}
+ggsave("images/credit_vis.png", plot = v_credit)
+```
+
+
+```{r}
+v_dispute<-full_data %>%
+  filter(vehicle_type!="fhv")%>%
+  ggplot(mapping=aes(x=date, 
+                     y=payment_dispute/1000, 
+                     group=vehicle_type,
+                     fill=vehicle_type))+
+    geom_bar(stat="identity")+
+   # facet_wrap(~vehicle_type, ncol=1,scales = "free")+
+  # ylim(0,8000)+
+    scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Dispute payment trips"),
+       subtitle = paste("The graphs shows an increase un the number of dispute payments after 2015"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="Trips with disputed payments (thousands)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(face="italic",size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+v_dispute
+```
+
+```{r}
+ggsave("images/dispute_vis.png", plot = v_dispute)
+```
+
+```{r}
+full_data %>%
+  filter(vehicle_type!="fhv")%>%
+  ggplot(mapping=aes(x=date, 
+                     y=payment_no_charge/1000, 
+                     group=vehicle_type,
+                     fill=vehicle_type))+
+    geom_bar(stat="identity")+
+    #facet_wrap(~vehicle_type, ncol=1,scales = "free")+
+  # ylim(0,8000)+
+    scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("No charge trips"),
+       subtitle = paste("The average NYC user seems to take cabs for "),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="No charge trips (thousands)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(face="italic",size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+```
+
+```{r}
+## Data Visualization 7
+ggplot(data=full_data,
+       mapping= aes(x=total_fare, y=log(trip_n)))+
+  geom_point(mapping=aes(fill=vehicle_type), size=3, shape=21, color="black")+
+  scale_fill_manual(name="Vehicle Type",
+                    labels=c("fhv"="FHV","green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("fhv"="#b3005a","green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Relationship between average trip distance and average fare"),
+       subtitle = paste("The average NYC user seems to take cabs for "),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Average Total Fare (US dollars)",
+       y="Number")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(face="italic",size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+```
+
+```{r echo=FALSE, fig.width=8, fig.height=5}
+## Data Visualization 8
+v8<-full_data %>%
+  filter(vehicle_type!="fhv")%>%
+  ggplot(mapping= aes(x=date, y=total_fare))+
+  geom_line(mapping=aes(color=vehicle_type), size=0.9)+
+  geom_smooth(method="loess",
+              color="black")+
+  scale_color_manual(name="Vehicle Type",
+                    labels=c("fhv"="FHV","green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("fhv"="#b3005a","green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Evolution of the average fare in traditional taxi market"),
+       subtitle = paste(""),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Time",
+       y="Average Total Fare (US dollars)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(face="italic",size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+ v8 
+```
+
+```{r}
+ggsave("images/figure4_vis.png", plot = v8)
+```
+
+```{r}
+only_fhv<-full_data%>%
+  filter(vehicle_type=="fhv")%>%
+  ggplot(mapping= aes(x=date, y=trip_n))+
+  geom_point()
+only_fhv
+```
+
+
+
+
+
+```{r}
+subset<-full_data%>%
+  filter(vehicle_type!="fhv")%>%
+  select(year,
+               date,
+               vehicle_type,
+               passenger_count,
+               trip_distance,
+               total_fare,
+               payment_credit,payment_cash, payment_no_charge, payment_dispute, payment_unknown, 
+               trip_n, 
+               trip)
+
+longdata<-gather(subset, payment_credit,payment_cash, payment_no_charge, payment_dispute, payment_unknown,
+                 key="Payment_Type",
+                 value="Number_of_trips")
+longdata
+```
+
+```{r}
+ggplot(data=longdata,
+       mapping= aes(x=year , y=Number_of_trips/1000000, group=Payment_Type,fill=Payment_Type)) +
+  geom_bar(stat="identity", width=0.5)+
+    scale_fill_brewer(palette ="GrBu", direction=1)+
+                  
+  labs(title= paste("Distribution of trips by payment type"),
+       subtitle = paste(""),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Vehicle Type",
+       y="Trips by payment types (millions)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(face="italic",size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+```
+
+
+
+

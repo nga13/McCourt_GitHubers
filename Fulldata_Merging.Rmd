@@ -1,0 +1,119 @@
+---
+title: "Merging Data"
+author: "Natalia Gonzalez Alarcón"
+date: "4/23/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(forcats)
+library(dplyr)
+library(ggplot2)
+require(tidyverse)
+require(readr)
+require(lubridate)
+require(tidyverse)
+require(glimpse)
+require(readr)
+require(caret)
+require(recipes)
+require(rattle)
+require(pdp)
+require(skimr)
+require(plyr)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+setwd("~/Box Sync/Data Science Project - Trip Record Data")
+```
+
+
+## Merging Green Data
+```{r}
+greendir = "Green_Data_Clean"
+green_files = list.files(path=greendir, pattern="*.csv", full.names=TRUE)
+green_files
+```
+
+```{r}
+green_fulldata = ldply(green_files, read_csv)
+green_fulldata
+```
+
+```{r}
+write_csv(green_fulldata, path="green_fulldata.csv")
+```
+
+
+## Merging FHV Data
+```{r}
+fhvdir = "FHV_Data_Clean"
+fhv_files = list.files(path=fhvdir, pattern="*.csv", full.names=TRUE)
+fhv_files
+```
+
+```{r}
+fhv_fulldata = ldply(fhv_files, read_csv)
+fhv_fulldata
+```
+
+
+```{r}
+write_csv(fhv_fulldata, path="fhv_fulldata.csv")
+```
+
+
+#Merging Yellow Data
+```{r}
+yellowdir = "Yellow Clean"
+yellow_files = list.files(path=yellowdir, pattern="*.csv", full.names=TRUE)
+yellow_files
+```
+
+```{r}
+yellow_fulldata = ldply(yellow_files, read_csv)
+yellow_fulldata
+```
+
+
+```{r}
+yellow_fulldata <- yellow_fulldata %>%
+  select(month,
+         year,
+         vehicle_type,
+         passenger_count=mean_passenger_count,
+         trip_distance=mean_trip_distance,
+         total_fare=mean_total_fare,
+         payment_credit,payment_cash, payment_no_charge, payment_dispute, payment_unknown,
+         trip_n, 
+         trip)
+yellow_fulldata
+```
+
+```{r}
+write_csv(yellow_fulldata, path="yellow_fulldata.csv")
+```
+
+
+## Merging everything
+```{r}
+fulldata_files = list.files(pattern="fulldata.csv", full.names=TRUE)
+fulldata_files
+
+```
+
+```{r}
+Total_fulldata = ldply(fulldata_files, read_csv)
+Total_fulldata
+```
+
+```{r}
+write_csv(Total_fulldata, path="Total_fulldata.csv")
+```
