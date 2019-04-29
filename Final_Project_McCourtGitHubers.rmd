@@ -1,0 +1,279 @@
+---
+title: | 
+    | NYC Trip Record Data: Data Wrangling
+    | Final Project
+author: | 
+  McCourt GitHubers: Jamie Taylor (jt1183), Yihan Wang (yw524), and Natalia Gonzalez Alarcon (nga13)
+date: "April 30, 2019"
+output: pdf_document
+header-includes:
+- \usepackage{setspace}
+- \doublespacing
+geometry: margin = 1.2in
+fontsize: 12pt
+spacing: doublespace
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require(readr)
+require(knitr)
+require(tidyverse)
+require(ggplot2)
+library(dplyr)
+require(lubridate)
+require(gridExtra)
+```
+**I. Problem Statement and Background**                 
+
+Innovation is transforming the way the economy works and the workforce is changing as a result. In a survey conducted by Deloitte, nearly half of executives reported that they expect to increase their use of contingent or freelance workers in the next three to five years. On the labor force side, a PricewaterhouseCoopers study from June 2016 indicated that people are looking for more flexible work conditions and a better balance between work and life, which suggests that the working dynamic may be changing.
+
+Even though the changing labor market creates new income and job opportunities, the discussion on how they impact current industries remains unsolved. Millions of Americans participate in the gig economy as rideshare drivers, Etsy sellers, house cleaners, etc. According to a Morgan Stanley report, freelancers represent 35% of the total U.S. working population and could represent more than half of the nation's workforce by 2027. The appearance of Uber and Lyft, in particular, has brought convenience to daily life and provides new job opportunities for individuals looking for work. However, rideshare companies have also created a negative impact on the traditional taxi industry. Reports suggest that Uber and Lyft are massively increasing car trips in many of the most walkable and transit-friendly places in U.S. The rise of For-Hire Vehicles (FHVs) may increase congestion, traffic fatalities, declines in public transit ridership, and largely reduce the number of customers for taxis[^4]. We propose examining the impact of the gig economy through a case study of trip record data provided by New York City’s (NYC) Taxi & Limousine Commission (TLC).
+
+[^4]: Accessed February 11, 2019. https://usa.streetsblog.org/2019/02/04/all-the-bad-things-about-uber-and-lyft-in-one-simple-list/
+
+**II. Research Design/Approach**
+
+In order to examine this impact, we collected data from the TLC website. TLC provides updated trip record data in CSV files by month since 2009 for each vehicle type: green taxis, yellow cabs, and FHV’s. Due to the number of the files, we decided to look at a shorter time period and downloaded all files available from 2014 to 2018 for each vehicle type. Even though the data files are recorded by month and vehicle type, the size of the data files were extremely large due to trip record data being recorded by the minute. Many files contained ~one million observations across eighteen variables. 
+
+Types of Vehicles  | Number of Files | Size of Files
+------------- | ------------- | -------------
+Yellow Taxi  | 59 | 77.8 GB
+Green Taxi  | 60 | 8.8 GB
+FHV  | 49 | 32.4 GB
+Total | 168 | 119 GB
+
+Due to the size and format of these data, the main goal of our project was to create a dataset of trip record data and process it so that it could be used for analysis. We decided to change the unit of analysis from minute to month which meant also deciding how to summarize all of the variables at this new month level of analysis. Aggregating up the data files by month also allowed us to reduce the overall size of the data and make it more manageable. We chose to discard variables that were unrelated to our project, and planned to summarize all of the data at the month level.  Once our dataset was built, we planned to conduct some exploratory data analysis (EDA) and hopefully identify relationships and/or changes between the FHVs and yellow/green taxis.
+
+**III. Methods & Tools**
+
+  *Data processing and cleaning*
+  
+We used functions from several packages including `readr`, `tidyverse`, `recipes`, and base R. The steps of our methods are outlined below.
+
+  *1. Read the data in*
+  
+a. The first step in our project was to read in all of the .csv files of trip record data that we downloaded from the TLC website. Our first attempt was to use the `purrr` package as it allows for reading in a list of files and binding them all at once. However, we quickly realized that this would not work due to the large size of each file[^5].
+b. Ultimately, we read in each file individually using the `readr` package and applied each cleaning and mutation step.
+
+[^5]:See Appendix item 1
+
+  *2. Select relevant variables*
+  
+After reading in each file, we used `select` from the `dplyr` grammar of the `tidyverse` package to select and rename the variables we were interested in using[^6].
+
+[^6]: See appendix item 2
+
+  *3. Mutate and transform variables*
+  
+We used `mutate` to manipulate and create variables needed for our analysis[^7]. The following steps were necessary prior to aggregate the data up to the month level.
+
+[^7]: See appendix item 3
+
+a. The first step was to use the `lubridate` package to drop the time from our `pickup_date` and `dropoff_date` variables and rounded them to a date only. 
+- On some occasions, the `pickup_date` and `dropoff_date` variables did not read in as date-time columns and we used mutate and lubridate to convert to date-times, then rounded to a day.
+b. Next, we created separate `month` and `year` variables.
+c. We coerced `payment_type` to a factor variable by using `as.factor` so that we would be able to summarise the number of payments by each type.
+d. We used the `paste` function to coerce `pickup_location` and `dropoff_location` to strings and concatenate them together in a new variable `trip` (i.e. pickup_location - dropoff_location).
+e. Next, we used `recipes` package to dummy out the `payment_type` variable[^8]. 
+f. We knew that we wanted to find out the most frequent `trip` that occurred for each month. Since `trip` was a string variable, we created a function that would allow us to calculate the mode of the new `trip` variable (described in item d) later in the aggregation step[^9].
+
+[^8]: See Appendix item 4
+[^9]: See Appendix item 5
+
+  *4. Aggregate data up to a month* 
+  
+We chose to aggregate up the trip record data to a month using the `lubridate` package. We used `group_by` to group the data by month, year, and vehicle type. Since we decided to change the unit of analysis of the trip record data from minutes to a month, we also needed to summarise all of the other variables at this level. We chose the following:
+
+Variable  | Summarised by month
+------------- | -------------
+passenger_count | Mean of passenger count
+payment type factor variables (credit, cash, no charge, dispute, etc)  | Sum of each factor variable
+trip_distance  | Mean of trip distance
+total_fare  | Mean of total fare
+trip  | Mode of trip
+trip_n | Count (# of trips by month)
+
+  *5. Saving and merging files to a complete dataset*
+  
+We used the `readr` package to save the new monthly data files to csv.  After all vehicle files were aggregated up to a month and saved, we used `list.files` from base R to save all of the file names to an object. Next, we used the `ldply` function from the `plyr`  package to combine all the files by vehicle type, and then repeated the same step to combine all yellow, green, and FHV data into one file.
+
+*Exploratory Data Analysis*
+
+After our trip record data set was finally created, we had the chance to begin some exploratory data analysis using `ggplot2` from the tidyverse package. 
+
+
+**IV. Results**
+
+The goal of this project was to analyze the potential impact of companies like Uber and Lyft on the standard green and yellow taxi cab market in New York City. The variable of interest was the total number of trips by each vehicle type and its evolution since 2014 when the FHVs entered the market. Figure 1 shows a decreasing trend of the traditional taxi trips and an increasing trend of the number of trips taken by FHVs. Even before the increased popularity of FHVs in 2015, the number of trips taken by yellow taxis slightly decreased from the beginning of 2014. After 2015, we see yellow taxi ridership continue to decline. In contrast, the number of trips taken by green taxis seemed to remain at a low level, suggesting that the entrance of FHVs into the market did not have a considerable impact on green taxi ridership. The entry of FHVs has a noticeable impact on the yellow taxi market, but it seems that it does not create a great challenge for the green taxi market. 
+```{r, include=FALSE}
+full_data <- read_csv("Total_fulldata.csv")%>%
+  mutate(date = make_date(year, month),
+ date = as.Date(date, format ="%Y-%M"))
+```
+## Figure 1
+```{r echo=FALSE, fig.width=8, fig.height=4}
+
+v3 <-ggplot(full_data, 
+           aes(x=date, y=trip_n/1000000,
+               group=vehicle_type, 
+               color=vehicle_type)) + 
+  geom_line(size=0.7) + 
+  geom_point(size=1.5)+
+  scale_color_manual(name="Vehicle Type",
+                    labels=c("fhv"="For Hire", "green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("fhv"="#b3005a", "green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Evolution of the standard taxi cab market in NYC, since 2014 when \nthe FHVs entered the market"),
+       subtitle = paste("Graph shows a decreasing trend of the traditional taxi trips and an increasing \ntrend of the number of trips taken by FHVs"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="Number of trips per million people")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+v3
+```
+In Figure 2 we can see that the market size increased from approximately 180 million trips per month in 2014 to about 340 million in 2018. It can suggest two possible hypotheses. On the one hand, the FHV services might induce a higher demand for individual transport modes, and as a result, people travel more than before. On the other hand,  these alternative modes might take away trips from mass public transport, potentially shifting away trips from more space-efficient modes (the fundamental advantage of public transport) and as a result, congestion is increasing. Or a combination of both. 
+
+## Figure 2
+```{r echo=FALSE, fig.width=8, fig.height=4}
+v1<-ggplot(data=full_data,
+       mapping= aes(x=year, y=trip_n/1000000, fill=vehicle_type))+
+  geom_bar(stat="identity",
+           position="stack", width=0.6)+
+  scale_fill_manual(name="Vehicle Type",
+                    labels=c("fhv"="For Hire", "green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("fhv"="#b3005a", "green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Evolution of the Taxi and FHV market size"),
+       subtitle = paste("The market size increased from approximately 180 million trips per month in 2014 to about 340 million in 2018"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="Number of trips per million people")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(size=11,colour="grey40"),
+        plot.title=element_text(size=16,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+v1  
+```
+Since the FHV data only provides the date and time of each trip and the pick-up location, our analysis is limited. We could not analyze more variables such as the distance or fare evolution between the FHV and the traditional cabs. However, we wanted to examine some features of yellow and green taxis. Figure 3 estimates the correlation between the average trip distance and the average total fare showing a stronger positive relationship for yellow taxis. It also indicates a better price-performance ratio for the yellow taxis in comparison to the green ones. Hence, people might be more willing to choose a yellow taxi for long-distance trips. Figure 4 shows that the average fare in the traditional taxi market has increased from 2014, which may be due to the entrance of FHVs into the market.
+
+## Figure 3
+```{r echo=FALSE, fig.width=8, fig.height=4}
+v4<-full_data %>%
+  filter(vehicle_type!="fhv")%>%
+ggplot(mapping= aes(x=total_fare, y=log(trip_distance)))+
+  geom_point(mapping=aes(fill=vehicle_type), size=3, shape=21, color="black")+
+  scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Relationship between average trip distance and average fare"),
+       subtitle = paste("The average NYC user seems to take yellow cabs for longer trips"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Average Total Fare (US dollars)",
+       y="Average Trip Distance (log miles)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+  v4
+```
+
+## Figure 4
+```{r echo=FALSE, fig.width=8, fig.height=4}
+v8<-full_data %>%
+  filter(vehicle_type!="fhv")%>%
+  ggplot(mapping= aes(x=date, y=total_fare))+
+  geom_line(mapping=aes(color=vehicle_type), size=0.9)+
+  geom_smooth(method="loess",
+              color="black")+
+  scale_color_manual(name="Vehicle Type",
+                    labels=c("fhv"="FHV","green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("fhv"="#b3005a","green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Evolution of the average fare in traditional taxi market"),
+       subtitle = paste(""),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Time",
+       y="Average Total Fare (US dollars)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(face="italic",size=10,colour="grey40"),
+        plot.title=element_text(size=15,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+ v8 
+```
+Another area of interest is the change over time of the payments methods. Figures 5 and 6 present the evolution of cash and credit payments since 2014. Figure 5 evidences a substantial decrease in the number of trips paid by cash. One possibility is that in the last years, people are more likely to use electronic methods, such as credit card, than before. The other option is that the ratio of people who paid by cash did not change drastically, but the total number of riders decreased. Figure 6 shows the evolution of the number of trips paid by credit card. Overall, it reports a smooth decrease over time due to, perhaps, the declining of the total number of trips in the traditional taxi market.
+
+## Figure 5
+```{r echo=FALSE, fig.width=8, fig.height=3}
+## Data Visualization 5
+v_cash <-full_data %>%
+  filter(vehicle_type!="fhv")%>%
+  ggplot(mapping=aes(x=date, 
+                     y=payment_cash/1000, 
+                     group=vehicle_type,
+                     fill=vehicle_type))+
+    geom_bar(stat="identity")+
+  # facet_wrap(~vehicle_type, ncol=1,scales = "free")+
+  # ylim(0,8000)+
+    scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Trips paid by cash in the NYC traditional taxi market (2014 -2018)"),
+       subtitle = paste("Substantial deacrease since people are more likely to use electronic payment methods"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="Trips paid by cash (thousands)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(size=10,colour="grey40"),
+        plot.title=element_text(size=13,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+v_cash
+```
+
+## Figure 6
+```{r echo=FALSE, fig.width=8, fig.height=3}
+v_credit<-full_data %>%
+  filter(vehicle_type!="fhv")%>%
+ggplot(mapping=aes(x=date, y=payment_credit/1000, fill=vehicle_type))+
+    geom_bar(stat="identity")+
+  #  facet_wrap(~vehicle_type, ncol=1,scales = "free")+
+  # ylim(0,8000)+
+    scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(title= paste("Trips paid by credit card in the NYC traditional taxi market (2014 -2018)"),
+       subtitle = paste("Smooth decrease over time might be due to the decline of the total number of trips in the market"),
+       caption="Source: NYC Taxi and Limousine Commission (2018)",
+       x="Year",
+       y="Trips paid by credit (thousands)")+
+  theme(text=element_text(family = "Helvetica"),
+        legend.position="bottom",
+        plot.caption=element_text(hjust=1,size=9,colour="grey30"),
+        plot.subtitle=element_text(size=10,colour="grey40"),
+        plot.title=element_text(size=13,face="bold"),
+        panel.background = element_rect(fill = 'white'))
+v_credit
+```
+Given that we finally created an aggregated dataset with tidy and summarized information, successfully made several plots based on the tidy dataset, and analyzed the changes of the taxi market of New York City after the entrance of FHV from various aspects, we would define our project as successful. 
+
+
+**V. Next Steps for Future Work**
+
+Our project presented many challenges related to missing data, incomplete or inaccurate data, and also inconsistent variables across files. 
+
+- As mentioned, our analysis was limited by the fact that FHV data did not collect the same information as the yellow and green taxis. One area for improvement would be to find other data sources for FHV/Rideshare data. 
+
+- We chose to group our data files by vehicle-type, month, and year. One potential change to our approach could be to also group by trip location. This would allow us to do some geographic analysis on pickup location and drop-off location across different types of vehicles. 
+
+- Another topic for further research is to examine whether FHVs have increased congestion overall. If the total vehicle miles traveled by individual transport modes (yellow, green and FHV) is increasing as a whole, this could suggest increased congestion. Such analysis could also support some studies that suggest a decline in public transport ridership as a consequence of the increased popularity of the FHVs.
