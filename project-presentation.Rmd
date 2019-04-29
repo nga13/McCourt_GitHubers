@@ -1,0 +1,123 @@
+---
+title: "Data Wrangling with NYC Trip Record Data"
+subtitle: "Intro to Data Science Final Project"
+author: "Group No. 2 - Natalia Gonzalez Alarcon, Jamie Taylor, Yihan Wang"
+date: "April 29, 2019"
+output:
+  ioslides_presentation:
+    widescreen: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Background | Exploring the gig economy {.build}
+- The U.S. workforce is increasingly participating in what is known as the "gig economy"
+- The gig economy allows workers to easily find quick, temporary jobs
+- While these new labor models create more income opportunities, how do they impact or disrupt current industries and labor markets?
+
+> - For our project, we proposed examining the impact of the gig economy through a case study using data provided by New York City's Taxi & Limousine Commission (TLC)
+
+## Background {.smaller}
+<div class="columns-2">
+NYC's TLC published .csv files on trip record data
+![](images/tlc-webpage.png)
+![](images/tlc-files.png)
+</div>
+
+
+## Research Design/Approach 
+
+> - Build our own consolidated dataset using trip record data from the TLC using data wrangling techniques from `tidyverse` (`dplyr` and `tidyr` grammar) and `purrr` packages. This involved taking the data from:
+
+        raw -> processed
+        altering the unit of analysis
+  
+> - Once we had the dataset together, we planned to conduct some exploratory data analysis (EDA) using 'ggplot2' from the tidyverse package and potentially look at relationships between green/yellow taxis versus FHV's as they began to enter the market
+
+> - We realized quickly though that the data was constructed for a different purpose and that most of our time would be spent building a dataset that could be used for our analysis
+
+
+## Research Design/Approach {.smaller}
+Huge file sizes
+
+![text](images/trip-files.png)
+
+
+## Methods and Tools {.build}
+We used functions from several packages including `readr`, `tidyverse`, `recipes`, `plyr`, and base R. 
+
+* <span style = "color:blue2">Data processing and cleaning</span>
+  + 1 Read the data in using `readr`*
+  + 2 Select and rename relevant variables using `select` and `add_column` to create new variables
+  + 3 Mutate and transform variables 
+  + 4 Aggregate data up to a month (altering unit of analysis)
+  + 5 Combine all files (month and vehicle type) using `list.files` and `plyr`
+
+* Exploratory Data Analysis 
+  + Once our data set was built, we were finally able to begin exploring the data with `ggplot2`
+
+## Methods and Tools {.smaller}
+Variables  | Aggregation
+------------- | -------------
+pickup_date  | Rounded to month, year
+dropoff_date  | Rounded to month, year
+passenger_count  | Mean of passenger count
+payment type factor variables  | Sum of each factor variable
+trip_distance  | Mean of trip distance
+total_fare | Mean of total fare
+trip | Mode of trip
+trip_n | Count (# of trips by month)
+
+## Methods and Tools {.smaller}
+We used `group_by` to aggregate the data up to a month which also meant that we needed to `summarise` all of our variables at that level.
+
+        yellow_monthly <- yellow_clean %>%
+          mutate(pickup_date = round_date(pickup_date, unit = "month"),
+                 dropoff_date = round_date(dropoff_date, unit = "month")) %>%
+          group_by(month, year, vehicle_type) %>%
+          summarise(mean_passenger_count= mean(passenger_count), 
+                    payment_credit = sum(payment_credit),
+                    payment_cash = sum(payment_cash),
+                    payment_no_charge = sum(payment_no_charge),
+                    payment_dispute = sum(payment_dispute),
+                    mean_trip_distance = mean(trip_distance),
+                    mean_total_fare = mean(total_fare),
+                    trip = mode(trip),
+                    trip_n = n()) %>% 
+          na.omit() %>%
+          filter(year==2018 & month==1)`
+
+## Results 
+
+![](images/aggregate-data-view.png)
+
+## Results {.smaller}
+<div class="columns-2">
+Once our data set was built, we began plotting and exploring the data
+![](images/third-vis-resize.png)
+
+
+![](images/figure2-vis-resize.png)
+</div>
+
+## Results
+<div class="centered">
+![](images/figure3-vis-resize.png)
+</div>
+
+## Results {.smaller}
+<div class= "centered">
+![](images/figure4_vis.png)
+
+
+## Next steps for future work {.build}
+Our project presented many challenges related to file sizes, missing data, incomplete or inaccurate data, and also inconsistent variables across files.
+
+- FHVs did not collect the same information as yellow and green taxis. One area for improvement would be to find other data sources to use for FHV/Rideshare data to eventually combine or compare with the yellow/green taxi cab data.
+
+- We chose to aggregate by `month`, `year`, and `vehicle type`. One potential change to our approach could be to also aggregate the data by trip location. This would allow us to conduct some geographic analysis.
+
+- Another topic for further research is whether FHVs have increased congestion in NYC overall.
+
