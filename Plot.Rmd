@@ -1,0 +1,183 @@
+---
+title: "Plots"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+
+## Including Plots
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library(ggplot2)
+```
+
+
+```{r}
+ggplot(data=Total_fulldata, aes(x=year, y=trip_n,group=vehicle_type, color=vehicle_type)) + geom_line() 
+```
+
+
+
+
+```{r}
+fulldata<- Total_fulldata %>%
+  mutate(date = make_date (year, month),
+ date = as.Date(date, format ="%Y-%M"))
+  
+fulldata
+```
+
+```{r}
+ggplot(fulldata, aes(x=date, y=trip_n/1000000,group=vehicle_type, color=vehicle_type)) + geom_line() + geom_point(size=0.5) 
+```
+```{r}
+ggplot(fulldata, aes(x=date, y=trip_n/1000000,group=vehicle_type, color=vehicle_type)) + geom_line() + geom_point(size=0.5) + 
+   scale_color_manual(name="Vehicle Type",
+                    labels=c("fhv"="For Hire", "green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("fhv"="#b3005a", "green"="#7fb903", "yellow"="#fbd10e"))+
+labs(x="Time",
+       y="Trip number",
+       fill="",
+       title="Tentency for each type of vehicle",
+       subtitle="Data on FHV,Green and Yellow Taxis from 2014 - 2018"
+       ) +
+theme(legend.position = "bottom",
+        plot.title = element_text(hjust=.5),
+        plot.subtitle = element_text(hjust=.5))
+```
+
+```{r}
+ggplot(fulldata,mapping=aes(x=date,y=payment_credit/10000,group=vehicle_type,fill=vehicle_type))+
+  geom_bar(stat="identity")+
+    scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(x="Time",
+       y="Number of payment by credit ",
+       fill="",
+       title="Number of Payment by Credit",
+       subtitle="Data on Green and Yellow Taxis from 2014 - 2018",
+       caption="No data on FHV") +
+theme(legend.position = "bottom",
+        plot.title = element_text(hjust=.5),
+        plot.subtitle = element_text(hjust=.5))
+```
+```{r}
+ggplot(fulldata,mapping=aes(x=date,y=payment_cash/10000,group=vehicle_type,fill=vehicle_type))+
+  geom_bar(stat="identity")+
+    scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(x="Time",
+       y="Number of payment by cash ",
+       fill="",
+       title="Number of Payment by Cash",
+       subtitle="Data on Green and Yellow Taxis from 2014 - 2018",
+       caption="No data on FHV") +
+theme(legend.position = "bottom",
+        plot.title = element_text(hjust=.5),
+        plot.subtitle = element_text(hjust=.5))
+```
+
+```{r}
+ggplot(fulldata,mapping=aes(x=date,y=payment_dispute/10000,group=vehicle_type,fill=vehicle_type))+
+  geom_bar(stat="identity")+
+    scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(x="Time",
+       y="Number of payment with dispute ",
+       fill="",
+       title="Number of Payment with Dispute",
+       subtitle="Data on Green and Yellow Taxis from 2014 - 2018",
+       caption="No data on FHV") +
+theme(legend.position = "bottom",
+        plot.title = element_text(hjust=.5),
+        plot.subtitle = element_text(hjust=.5))
+```
+
+```{r}
+ggplot(fulldata,mapping=aes(x=date,y=payment_unknown/10000,group=vehicle_type,fill=vehicle_type))+
+  geom_bar(stat="identity")+
+    scale_fill_manual(name="Vehicle Type",
+                    labels=c("green"="Green Taxis", "yellow"= "Yellow Taxis"),
+                    values=c("green"="#7fb903", "yellow"="#fbd10e"))+
+  labs(x="Time",
+       y="Number of payment with dispute ",
+       fill="",
+       title="Number of unknown Payment",
+       subtitle="Data on Green and Yellow Taxis from 2014 - 2018",
+       caption="No data on FHV") +
+theme(legend.position = "bottom",
+        plot.title = element_text(hjust=.5),
+        plot.subtitle = element_text(hjust=.5))
+```
+
+```{r}
+subset<-fulldata%>%
+  filter(vehicle_type!="fhv")%>%
+  select(year,
+               date,
+               vehicle_type,
+               passenger_count,
+               trip_distance,
+               total_fare,
+               payment_credit,payment_cash, payment_no_charge, payment_dispute, payment_unknown, 
+               trip_n, 
+               trip)
+
+longdata<-gather(subset, payment_credit,payment_cash, payment_no_charge, payment_dispute, payment_unknown,
+                 key="Payment_Type",
+                 value="Number_of_trips")
+longdata
+```
+
+```{r}
+ggplot(data=longdata,
+       mapping= aes(x=year , y=Number_of_trips/1000000, group=Payment_Type,fill=Payment_Type)) +
+  geom_bar(stat="identity")+
+                  
+   labs(title= paste("Distribution of trips by payment type"),
+       subtitle = paste(""),
+       caption="Source: NYC Taxi and Limousine Commission (2014-2018)",
+       x="Vehicle Type",
+       y="Trips by payment types (millions)")+
+  theme(
+        legend.position="bottom",
+        plot.caption=element_text(hjust=0.5,size=9,colour="grey30"),
+        plot.subtitle=element_text(face="italic",size=10,colour="grey40"),
+        plot.title=element_text(hjust=0.5,size=15,face="bold")
+        )
+```
+
+```{r}
+ggplot(fulldata,mapping=aes(x=date,y=passenger_count))+
+  geom_bar(stat="identity")+
+    scale_fill_manual(
+                 values = c("yellow"="#fbd10e"))+
+  labs(x="Time",
+       y="Number of mean passengers ",
+       fill="",
+       title="Number of mean passenger for yellow taxi ",
+       subtitle="Data on Yellow Taxis from 2014 - 2018",
+       caption="Source: NYC Taxi and Limousine Commission (2014-2018)") +
+theme(legend.position = "bottom",
+        plot.title = element_text(hjust=.5),
+        plot.subtitle = element_text(hjust=.5))
+```
+
