@@ -1,0 +1,49 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(tidyverse)
+require(readr)
+require(lubridate)
+```
+
+
+```{r}
+green_files <- list.files(path = "green", pattern = "*.csv", 
+                           full.names = TRUE) 
+green_files
+```
+
+
+```{r}
+green_data <- read_csv("green/green_tripdata_2017-12.csv")
+```
+
+# clean data
+```{r}
+green <- green_data %>%
+  select( pickup_date =lpep_pickup_datetime, 
+          dropoff_date=lpep_dropoff_datetime ,
+                 passenger_count,
+                 trip_distance,
+                 payment_type,
+                 total_fare = total_amount,
+                 pickup_location= PULocationID,
+               dropoff_location= DOLocationID
+  )
+```
+
+```{r}
+ daily_green <- green %>%
+ mutate(day = as.Date(pickup_date, format ="%Y-%m-%d"))%>%
+ group_by(day) %>% # group by the day column
+ summarise(passenger_count_mean=mean(passenger_count)) %>%
+ na.omit()
+
+daily_green
+```
+
+ 
+
+
+
+
